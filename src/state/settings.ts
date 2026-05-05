@@ -90,6 +90,10 @@ export interface Settings {
   /** Global hotkey that wakes the launcher window. Electron accelerator
    *  syntax (Cmd+Alt+Space, Alt+Space, F12, …). */
   launcherHotkey: string;
+  /** True once the user has dismissed the first-run onboarding tour.
+   *  Drives the modal in `App.tsx` — fresh installs see it on first
+   *  launch, existing users see it once after upgrading. */
+  hasSeenOnboarding: boolean;
 }
 
 export const MAX_RECENT_FILES = 30;
@@ -114,7 +118,8 @@ export const DEFAULT_SETTINGS: Settings = {
   recentUrls: [],
   searchEngine: 'google',
   customSearchUrl: 'https://example.com/?q={q}',
-  launcherHotkey: 'Alt+Space',
+  launcherHotkey: 'Cmd+Alt+Space',
+  hasSeenOnboarding: false,
 };
 
 const LEGACY_STORAGE_KEY = 'milu:settings';

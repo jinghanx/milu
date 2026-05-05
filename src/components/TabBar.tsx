@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Reorder, type PanInfo } from 'framer-motion';
 import { useWorkspace, workspace, findLeaf, getActiveSession, type Tab } from '../state/workspace';
+import { openFolderInEditor } from '../lib/actions';
 import { uiBus } from '../lib/uiBus';
 
 interface TabBarProps {
@@ -84,6 +85,36 @@ export function TabBar({ paneId, sessionId, edges = { left: true, right: true } 
     // animation isn't clobbered mid-drag.
     setLocalTabs(tabs);
   }, [tabs]);
+
+  /** Ref to the outer .tabbar — used by the ResizeObserver below to
+   *  watch every tab's measured width and tag narrow ones. */
+  const tabbarRef = useRef<HTMLDivElement | null>(null);
+
+  /** When tabs are squeezed by a full strip, the close button steals
+   *  room from the title and looks crowded. Toggle a `tab--narrow`
+   *  class on each tab whose width drops below ~140px (enough for
+   *  icon + a meaningful title slice + X) so the X hides via CSS.
+   *  CSS container queries can't be used because `container-type:
+   *  inline-size` strips the tab's content-based intrinsic width and
+   *  the flex layout collapses. We observe each tab individually
+   *  because the tabbar's own size often doesn't change when tabs are
+   *  added/removed — only the per-tab flex share does. */
+  useEffect(() => {
+    const root = tabbarRef.current;
+    if (!root) return;
+    const NARROW_THRESHOLD = 84;
+    const apply = (el: HTMLElement) => {
+      if (el.classList.contains('tab--pinned')) return;
+      el.classList.toggle('tab--narrow', el.offsetWidth < NARROW_THRESHOLD);
+    };
+    const tabsEls = Array.from(root.querySelectorAll<HTMLElement>('.tab'));
+    tabsEls.forEach(apply);
+    const ro = new ResizeObserver((entries) => {
+      for (const entry of entries) apply(entry.target as HTMLElement);
+    });
+    tabsEls.forEach((el) => ro.observe(el));
+    return () => ro.disconnect();
+  }, [localTabs.length]);
 
   const handleReorder = (next: Tab[]) => {
     // Pinned partition: pinned tabs always live to the left. As the
@@ -211,7 +242,7 @@ export function TabBar({ paneId, sessionId, edges = { left: true, right: true } 
   };
 
   return (
-    <div className="tabbar" data-tabbar-pane-id={paneId}>
+    <div className="tabbar" data-tabbar-pane-id={paneId} ref={tabbarRef}>
       {edges.left && <SidebarToggle visible={sidebarVisible} />}
       <Reorder.Group
         as="div"
@@ -364,6 +395,14 @@ export function TabBar({ paneId, sessionId, edges = { left: true, right: true } 
           }}
           onCloseAll={() => closeWithDirtyCheck(tabs.filter((x) => !x.pinned))}
           onTogglePin={(t) => workspace.togglePinTab(t.id)}
+          onOpenParentFolder={(t) => {
+            // Strip the final segment from the absolute path; fall back
+            // to "/" if we'd otherwise produce an empty string (file at
+            // root level).
+            if (!t.filePath) return;
+            const parent = t.filePath.replace(/\/[^/]+\/?$/, '') || '/';
+            void openFolderInEditor(parent, { focus: true });
+          }}
         />
       )}
 
@@ -866,6 +905,7 @@ function TabContextMenu({
   onCloseToRight,
   onCloseAll,
   onTogglePin,
+  onOpenParentFolder,
 }: {
   x: number;
   y: number;
@@ -877,6 +917,7 @@ function TabContextMenu({
   onCloseToRight: (t: Tab) => void;
   onCloseAll: () => void;
   onTogglePin: (t: Tab) => void;
+  onOpenParentFolder: (t: Tab) => void;
 }) {
   const wrap = (fn: () => void) => () => {
     onClose();
@@ -935,6 +976,14 @@ function TabContextMenu({
           >
             Reveal in Finder
           </button>
+          {!isFolder && (
+            <button
+              className="ctx-menu-item"
+              onClick={wrap(() => onOpenParentFolder(tab))}
+            >
+              Open Parent Folder
+            </button>
+          )}
           {isFolder && (
             <button
               className="ctx-menu-item"

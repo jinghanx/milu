@@ -39,7 +39,10 @@ body {
   padding: 0;
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--serif);
+  /* Page voice is sans by default. Only the Origin section (the
+   *  dictionary-style "what does 麋鹿 mean" panel) opts into serif —
+   *  see `.origin` below. */
+  font-family: var(--sans);
   font-size: 18px;
   line-height: 1.7;
   -webkit-font-smoothing: antialiased;
@@ -59,6 +62,119 @@ a:hover {
 em {
   font-style: italic;
   color: var(--muted);
+}
+
+/* ─── Atmospheric background art ────────────────────────────────────────
+ *  Two stacked layers: a warm radial sunset glow (top-right, fading to
+ *  forest dusk at the bottom-left) and an inline SVG of overhead tree
+ *  branches reaching in from the upper-right corner. Layered via
+ *  explicit z-index — the page content sits on z:1, art sits on z:0.
+ *  Avoiding `z-index: -1` because it can fall behind `body`'s
+ *  background-color in some browsers and become invisible. */
+.bg-art {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+.bg-art-glow {
+  position: absolute;
+  inset: 0;
+  background:
+    /* sunset on the upper-right horizon — warm gold/amber */
+    radial-gradient(
+      ellipse 80% 70% at 95% -10%,
+      color-mix(in srgb, #d4a574 70%, transparent) 0%,
+      color-mix(in srgb, #c08a5a 38%, transparent) 25%,
+      transparent 65%
+    ),
+    /* sunset rose halo blooming through the upper centre */
+    radial-gradient(
+      ellipse 80% 60% at 60% 5%,
+      color-mix(in srgb, #c97a52 28%, transparent) 0%,
+      transparent 65%
+    ),
+    /* deep forest dusk at the bottom-left, cooler green */
+    radial-gradient(
+      ellipse 100% 80% at -5% 110%,
+      color-mix(in srgb, #324032 50%, transparent) 0%,
+      color-mix(in srgb, #3a3a48 22%, transparent) 35%,
+      transparent 75%
+    ),
+    /* warm-to-cool diagonal wash so the page doesn't feel flat */
+    linear-gradient(
+      165deg,
+      color-mix(in srgb, #d4a574 18%, transparent) 0%,
+      transparent 45%,
+      color-mix(in srgb, #2a2a32 12%, transparent) 100%
+    );
+}
+.bg-art-branches {
+  position: absolute;
+  top: -30px;
+  right: -60px;
+  width: clamp(520px, 75vw, 980px);
+  height: auto;
+  aspect-ratio: 800 / 500;
+  color: #1a120a;
+  opacity: 0.42;
+}
+.bg-art-branch path {
+  vector-effect: non-scaling-stroke;
+}
+
+/* The page content needs to sit ABOVE .bg-art. Without an explicit
+ *  z-index here, the fixed art layer would render on top in document
+ *  order. */
+.page {
+  position: relative;
+  z-index: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  .bg-art-glow {
+    background:
+      radial-gradient(
+        ellipse 80% 70% at 95% -10%,
+        color-mix(in srgb, #d4884a 50%, transparent) 0%,
+        color-mix(in srgb, #8a4a2a 28%, transparent) 25%,
+        transparent 65%
+      ),
+      radial-gradient(
+        ellipse 80% 60% at 60% 5%,
+        color-mix(in srgb, #b85a3a 28%, transparent) 0%,
+        transparent 65%
+      ),
+      radial-gradient(
+        ellipse 100% 80% at -5% 110%,
+        color-mix(in srgb, #1a2520 75%, transparent) 0%,
+        color-mix(in srgb, #221a26 40%, transparent) 35%,
+        transparent 75%
+      ),
+      linear-gradient(
+        165deg,
+        color-mix(in srgb, #3a1f10 30%, transparent) 0%,
+        transparent 45%,
+        color-mix(in srgb, #050708 50%, transparent) 100%
+      );
+  }
+  .bg-art-branches {
+    color: #f0d4a4;
+    opacity: 0.55;
+  }
+}
+
+@media (max-width: 640px) {
+  .bg-art-branches {
+    width: 130vw;
+    right: -35vw;
+    top: -40px;
+    opacity: 0.32;
+  }
+  @media (prefers-color-scheme: dark) {
+    .bg-art-branches { opacity: 0.45; }
+  }
 }
 
 /* Page is intentionally narrow — long lines fight zen. */
@@ -84,7 +200,7 @@ em {
   box-shadow: 0 6px 24px color-mix(in srgb, var(--ink) 8%, transparent);
 }
 .head-name {
-  font-family: var(--serif);
+  font-family: var(--sans);
   font-weight: 600;
   font-size: 44px;
   letter-spacing: -0.02em;
@@ -298,11 +414,13 @@ em {
   font-style: italic;
 }
 
-/* Origin story — the "why is it called Milu" section. The Chinese
- * line gets its own treatment to feel grounded; the English follows
- * in the regular serif body voice. */
+/* Origin story — the "why is it called Milu" section. This is the
+ * one block that opts into the editorial serif voice (Newsreader),
+ * because it reads like a dictionary entry. The rest of the page is
+ * sans by default. */
 .origin {
   margin-bottom: 64px;
+  font-family: var(--serif);
 }
 .origin-zh {
   font-family: var(--zh);

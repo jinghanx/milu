@@ -6,6 +6,7 @@ import { PaneNode } from './components/PaneNode';
 import { Outline } from './components/Outline';
 import { FilePalette } from './components/FilePalette';
 import { NewFilePicker } from './components/NewFilePicker';
+import { Onboarding } from './components/Onboarding';
 import { PathInput } from './components/PathInput';
 import { SessionStrip } from './components/SessionStrip';
 import { NowPlaying } from './components/NowPlaying';
@@ -251,6 +252,7 @@ export function App() {
         replace={modal?.kind === 'path' ? modal.replace : false}
         onClose={close}
       />
+      <Onboarding />
     </div>
   );
 }

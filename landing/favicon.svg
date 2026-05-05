@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Milu">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f1d8b8"/>
+      <stop offset="100%" stop-color="#cda378"/>
+    </linearGradient>
+    <linearGradient id="al" x1="0.2" y1="0" x2="0.7" y2="1">
+      <stop offset="0%" stop-color="#fbe1bd"/>
+      <stop offset="100%" stop-color="#a87049"/>
+    </linearGradient>
+    <linearGradient id="ar" x1="0.8" y1="0" x2="0.3" y2="1">
+      <stop offset="0%" stop-color="#fbe1bd"/>
+      <stop offset="100%" stop-color="#caa078"/>
+    </linearGradient>
+    <linearGradient id="bl" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#b07a52"/>
+      <stop offset="100%" stop-color="#5e3a20"/>
+    </linearGradient>
+    <linearGradient id="br" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#dac6ae"/>
+      <stop offset="100%" stop-color="#9a8068"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded warm-tan background — tabs render this as the favicon "tile". -->
+  <rect width="200" height="200" rx="40" ry="40" fill="url(#bg)"/>
+  <!-- Left antler -->
+  <path fill="url(#al)" d="M 64,28 C 42,40 26,68 30,100 C 34,122 50,134 80,136 L 94,128
+    C 70,124 56,108 56,88 Q 56,68 64,50 Q 70,38 70,28 Z"/>
+  <!-- Right antler (mirror) -->
+  <path fill="url(#ar)" d="M 136,28 C 158,40 174,68 170,100 C 166,122 150,134 120,136 L 106,128
+    C 130,124 144,108 144,88 Q 144,68 136,50 Q 130,38 130,28 Z"/>
+  <!-- Decorative leaf -->
+  <ellipse cx="32" cy="92" rx="9" ry="14" fill="#fbe1bd" transform="rotate(-25 32 92)"/>
+  <!-- Left book panel -->
+  <path fill="url(#bl)" d="M 70,136 L 99,136 L 99,184 L 80,184 Q 70,184 70,174 Z"/>
+  <!-- Right book panel -->
+  <path fill="url(#br)" d="M 101,136 L 130,136 L 130,174 Q 130,184 120,184 L 101,184 Z"/>
+</svg>

@@ -357,6 +357,13 @@ function buildTrayMenu(): Menu {
         mainWindow?.webContents.send('menu:show-shortcuts');
       },
     },
+    {
+      label: 'Show Onboarding Tour',
+      click: () => {
+        bringMainForward();
+        mainWindow?.webContents.send('menu:show-onboarding');
+      },
+    },
     { type: 'separator' },
     {
       label: 'Quit Milu',
@@ -498,7 +505,7 @@ const LAUNCHER_H = 420;
  *  configured value. The renderer's settings module pings us on boot
  *  and on every change, so this matters for ~the first second of the
  *  process lifetime. */
-const DEFAULT_LAUNCHER_HOTKEY = 'Alt+Space';
+const DEFAULT_LAUNCHER_HOTKEY = 'Cmd+Alt+Space';
 let currentLauncherHotkey: string | null = null;
 /** Tracks what the user *wanted* even if registration failed. Read
  *  by the tray menu so the "Hotkey not bound — retry" item knows

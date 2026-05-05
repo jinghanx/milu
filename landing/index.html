@@ -12,9 +12,13 @@
     <meta property="og:description" content="One window for everything you keep open." />
     <meta property="og:image" content="/icon.png?v=3" />
     <meta name="theme-color" content="#bf8b5a" />
-    <link rel="icon" href="/icon.png?v=3" />
+    <!-- SVG favicon (rounded warm-tan tile, deer mark inside) for
+         modern browsers; PNG fallback for older clients and
+         apple-touch-icon for iOS home screen. -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=1" />
+    <link rel="icon" type="image/png" href="/icon.png?v=3" />
     <link rel="apple-touch-icon" href="/icon.png?v=3" />
-    <link rel="stylesheet" href="/style.css?v=zen-1" />
+    <link rel="stylesheet" href="/style.css?v=forest-3" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -23,6 +27,46 @@
     />
   </head>
   <body>
+    <!-- Atmospheric background art: warm sunset glow + tree-branch
+         silhouette overhead. Keeps the page's "zen" hierarchy intact
+         (it sits behind everything via z-index: -1, pointer-events
+         off) while pulling the moody-forest mood the icon hints at.
+         Both layers are theme-aware via CSS. -->
+    <div class="bg-art" aria-hidden="true">
+      <div class="bg-art-glow"></div>
+      <svg
+        class="bg-art-branches"
+        viewBox="0 0 800 500"
+        preserveAspectRatio="xMaxYMin slice"
+      >
+        <g class="bg-art-branch" fill="none" stroke="currentColor" stroke-linecap="round">
+          <!-- main bough sweeping in from the upper-right -->
+          <path d="M800,30 C700,68 610,90 540,108 C465,128 405,158 360,200" stroke-width="3" />
+          <!-- upward twigs along the main bough -->
+          <path d="M740,46 C732,28 724,16 712,2" stroke-width="1.2" />
+          <path d="M680,62 C672,42 664,28 656,12" stroke-width="1.2" />
+          <path d="M620,78 C610,58 602,42 600,22" stroke-width="1.4" />
+          <path d="M560,98 C552,72 548,54 540,32" stroke-width="1.5" />
+          <path d="M500,116 C480,96 470,80 460,52" stroke-width="1.6" />
+          <path d="M450,134 C434,112 424,96 410,72" stroke-width="1.6" />
+          <path d="M400,156 C380,134 365,114 350,90" stroke-width="1.6" />
+          <!-- sub-branch reaching down-left -->
+          <path d="M462,134 C422,178 382,210 322,234" stroke-width="2" />
+          <path d="M420,164 C410,198 400,224 388,244" stroke-width="1" />
+          <path d="M380,200 C370,224 365,244 354,264" stroke-width="1" />
+          <path d="M344,224 C338,250 332,270 322,290" stroke-width="1" />
+          <!-- second sub-branch -->
+          <path d="M540,128 C516,168 492,200 462,224" stroke-width="1.5" />
+          <path d="M510,154 C504,180 494,200 488,220" stroke-width="0.8" />
+          <path d="M480,184 C470,210 464,228 458,248" stroke-width="0.8" />
+          <!-- hanging filaments -->
+          <path d="M620,78 C622,118 624,148 624,178" stroke-width="0.8" />
+          <path d="M680,62 C682,98 684,128 684,160" stroke-width="0.6" />
+          <path d="M560,98 C562,140 564,170 564,196" stroke-width="0.7" />
+        </g>
+      </svg>
+    </div>
+
     <main class="page">
       <header class="head">
         <img class="head-icon" src="/icon.png?v=3" alt="Milu" width="64" height="64" />

@@ -746,8 +746,8 @@ function HotkeyCapture({
       <button
         type="button"
         className="btn btn-ghost"
-        onClick={() => onChange('Alt+Space')}
-        title="Reset to Option+Space"
+        onClick={() => onChange('Cmd+Alt+Space')}
+        title="Reset to Cmd+Option+Space"
       >
         Reset
       </button>

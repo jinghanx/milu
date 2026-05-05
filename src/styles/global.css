@@ -969,8 +969,14 @@ button {
   font-size: 12px;
   color: var(--text-muted);
   cursor: pointer;
+  /* Chrome-style sizing: each tab takes an equal slice of the strip,
+   *  grows up to a comfortable max-width when there's room, and
+   *  shrinks uniformly when the strip is packed. `flex-basis: 0`
+   *  decouples sizing from content so a single tab with a short title
+   *  doesn't collapse to nothing — it grows out to max-width. */
+  flex: 1 1 0;
   min-width: 0;
-  max-width: 220px;
+  max-width: 110px;
   user-select: none;
   transition: background 80ms ease-out, color 80ms ease-out;
 }
@@ -1493,12 +1499,24 @@ button {
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
+  /* Pin to the right edge of the tab — `margin-left: auto` consumes
+   *  any leftover space between the title and the close button so the
+   *  X always sits flush against the right padding. */
+  margin-left: auto;
 }
 
 .tab-close:hover {
   background: color-mix(in srgb, var(--text) 14%, transparent);
   color: var(--text);
 }
+
+/* Hide the close button when the tab has shrunk past the point where
+ *  the X would steal room from the title. The `.tab--narrow` class is
+ *  toggled by a ResizeObserver in TabBar.tsx — CSS container queries
+ *  don't work here because `container-type: inline-size` strips the
+ *  tab's content-based intrinsic width and the flex layout collapses.
+ *  Users can still close via ⌘W, middle-click, or the right-click menu. */
+.tab--narrow .tab-close { display: none; }
 
 /* Pinned tabs — Chrome-style "narrow tab", same height + corner radius as
  *  unpinned ones. Just a tighter footprint, favicon-only, no separate
@@ -1607,13 +1625,24 @@ button {
   overflow: auto;
 }
 
-/* Welcome screen — geeky terminal vibe */
+/* Welcome screen — geeky terminal vibe over a subtle dot grid. The
+ *  dots are a single radial-gradient repeated on a 22px raster, dimmed
+ *  via color-mix so they barely register in the periphery but give the
+ *  empty pane some texture. */
 .welcome {
   width: 100%;
+  min-height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 32px;
+  background-image: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--text-muted) 28%, transparent) 1px,
+    transparent 1.5px
+  );
+  background-size: 22px 22px;
+  background-position: 0 0;
 }
 .welcome-inner {
   font-family: var(--font-mono);
@@ -1624,38 +1653,23 @@ button {
   max-width: 720px;
   width: 100%;
 }
-.welcome-logo {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 1.1;
-  letter-spacing: 0;
-  margin: 0;
-  color: var(--accent);
-  text-shadow:
-    0 0 1px color-mix(in srgb, var(--accent) 60%, transparent),
-    0 0 8px color-mix(in srgb, var(--accent) 35%, transparent);
-  white-space: pre;
-  user-select: none;
-}
-.welcome-tagline {
-  font-size: 12px;
-  color: var(--text-muted);
-  letter-spacing: 0.02em;
-}
+/* Action stack hugs its widest row (no fixed max-width) so it centres
+ *  visually under `align-items: center` on the parent — fixed widths
+ *  with `1fr` label columns leave trailing whitespace that shifts the
+ *  apparent centre. */
 .welcome-actions {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  width: 100%;
-  max-width: 360px;
   margin-top: 16px;
+  width: max-content;
 }
 .welcome-row {
   display: grid;
-  grid-template-columns: 78px 1fr;
-  gap: 10px;
+  grid-template-columns: 64px auto;
+  gap: 12px;
   align-items: baseline;
-  padding: 3px 6px;
+  padding: 4px 8px;
   border-radius: 6px;
   font-family: var(--font-mono);
   font-size: 12px;
@@ -1693,35 +1707,8 @@ button {
 .welcome-row--actionable:hover .welcome-label {
   color: var(--text);
 }
-.welcome-blink {
-  margin-top: 14px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.welcome-prompt {
-  color: var(--accent);
-  font-weight: 700;
-}
-.welcome-cursor {
-  display: inline-block;
-  width: 7px;
-  height: 14px;
-  background: var(--accent);
-  margin-left: 2px;
-  animation: welcome-blink 1.05s steps(2, start) infinite;
-}
-@keyframes welcome-blink {
-  to { visibility: hidden; }
-}
-
-/* Tighten the logo a bit on narrower windows */
 @media (max-width: 720px) {
-  .welcome-logo { font-size: 9px; }
-  .welcome-actions { grid-template-columns: 1fr; }
+  .welcome-row { grid-template-columns: 56px auto; }
 }
 
 .editor-host {
@@ -8233,4 +8220,402 @@ button {
   --crepe-color-scrollbar: var(--border-strong);
   --crepe-shadow-1: 0 1px 2px var(--crepe-color-shadow);
   --crepe-shadow-2: 0 4px 12px var(--crepe-color-shadow);
+}
+
+/* ─── First-run onboarding tour ─────────────────────────────────────────
+ *  Full-screen overlay with a centered card. Mirrors the landing page's
+ *  editorial aesthetic — serif type, generous whitespace, a soft warm
+ *  sunset wash inside the card so the brand identity carries through. */
+.onb-backdrop {
+  background: rgba(0, 0, 0, 0.46);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 200;
+  animation: onb-fade-in 220ms ease;
+}
+
+@keyframes onb-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.onb-card {
+  width: min(580px, calc(100% - 48px));
+  background:
+    /* sunset glow in the upper-right, fading to forest dusk at the
+     *  bottom-left — same atmosphere as the landing page art, scaled
+     *  down for the modal */
+    radial-gradient(
+      ellipse 70% 60% at 95% -10%,
+      color-mix(in srgb, #d4a574 22%, transparent) 0%,
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 80% 60% at 5% 110%,
+      color-mix(in srgb, #324032 12%, transparent) 0%,
+      transparent 70%
+    ),
+    var(--bg-elev);
+  border: 1px solid var(--border-strong);
+  border-radius: 18px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.32);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Sans-serif voice (matches the landing page's body type and the
+   *  rest of the app chrome). The Origin section on the landing page
+   *  is the one place that opts into serif. */
+  font-family: var(--font-ui);
+  animation: onb-card-in 260ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@keyframes onb-card-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.onb-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 22px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+.onb-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.onb-tag em {
+  font-style: italic;
+  color: color-mix(in srgb, var(--text-muted) 80%, var(--text));
+}
+.onb-tag-sep {
+  opacity: 0.6;
+}
+.onb-tag-step {
+  font-style: italic;
+  color: color-mix(in srgb, #bf8b5a 80%, var(--text-muted));
+}
+
+.onb-skip {
+  font-family: var(--font-ui);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  padding: 4px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.onb-skip:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+}
+
+.onb-vis {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  padding: 36px 28px 12px;
+}
+
+/* Slide 1 logo — uses the actual icon.png from /build, sized for the
+ *  modal's vis area. Drop-shadow lifts it off the warm card glow. */
+.onb-logo-img {
+  width: 148px;
+  height: 148px;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 20px color-mix(in srgb, #8a5d3a 28%, transparent));
+}
+
+.onb-ascii {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.15;
+  color: var(--text);
+  margin: 0;
+  white-space: pre;
+}
+
+/* Slide 2: miniature window mockup. Workspace = outer frame with
+ *  titlebar; each box inside is a pane; the small bar at the top of
+ *  every pane is its tab strip. Spatial layout carries the hierarchy
+ *  so no extra labels are needed. */
+.onb-mock {
+  width: 360px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--bg);
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+}
+.onb-mock-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--border);
+}
+.onb-mock-traffic {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border-strong);
+}
+.onb-mock-title {
+  margin-left: 6px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+.onb-mock-body {
+  display: flex;
+  height: 150px;
+}
+.onb-mock-col {
+  display: flex;
+  flex-direction: column;
+  flex: 1.4 1 0;
+  border-left: 1px solid var(--border);
+}
+.onb-mock-pane {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.onb-mock-pane + .onb-mock-pane {
+  border-top: 1px solid var(--border);
+}
+.onb-mock-col > .onb-mock-pane:first-child { flex: 1.3 1 0; }
+.onb-mock-body > .onb-mock-pane:first-child { flex: 1 1 0; }
+.onb-mock-tabs {
+  display: flex;
+  gap: 1px;
+  padding: 3px 4px 0;
+  background: var(--bg-elev);
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+.onb-mock-tab {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  padding: 3px 7px;
+  border-radius: 4px 4px 0 0;
+  color: var(--text-muted);
+  background: transparent;
+}
+.onb-mock-tab--active {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-bottom: 0;
+}
+.onb-mock-content {
+  flex: 1 1 0;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+}
+/* Stand-in lines for content; widths vary so it reads as text. */
+.onb-mock-content--md span {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--text) 22%, transparent);
+}
+.onb-mock-content--md span:nth-child(1) { width: 70%; }
+.onb-mock-content--md span:nth-child(2) { width: 88%; }
+.onb-mock-content--md span:nth-child(3) { width: 55%; }
+.onb-mock-content--code span {
+  display: block;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--accent) 36%, transparent);
+}
+.onb-mock-content--code span:nth-child(1) { width: 60%; }
+.onb-mock-content--code span:nth-child(2) { width: 80%; margin-left: 8px; }
+.onb-mock-content--code span:nth-child(3) { width: 40%; margin-left: 8px; }
+.onb-mock-content--term {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--accent);
+  padding-top: 4px;
+}
+
+.onb-shortcut-list {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px 14px;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text);
+}
+.onb-shortcut-list > div {
+  display: contents;
+}
+/* Each row contributes exactly two grid items: an `.onb-keys` wrapper
+ *  (one or more <Kbd>s glued together) and a label <span>. The wrapper
+ *  is critical — without it, a row with two kbds spans three grid
+ *  cells and the layout tears across rows. */
+.onb-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+.onb-shortcut-list > div > span {
+  color: var(--text-muted);
+}
+
+/* Hero shortcut — one large kbd centred in the vis area, with a one-
+ *  line label below. Used on slides where the slide is "about" a
+ *  single keyboard shortcut, so we don't bury it in a list. */
+.onb-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.onb-hero-key .onb-kbd {
+  font-size: 22px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  border-width: 1px;
+  background: var(--bg);
+  box-shadow:
+    0 2px 0 color-mix(in srgb, #bf8b5a 28%, var(--border-strong)),
+    0 12px 28px color-mix(in srgb, #8a5d3a 18%, transparent);
+}
+.onb-hero-label {
+  font-family: var(--font-ui);
+  font-style: italic;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.onb-kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 7px;
+  border: 1px solid var(--border-strong);
+  border-radius: 5px;
+  background: var(--bg);
+  color: var(--text);
+  box-shadow: 0 1px 0 var(--border-strong);
+  white-space: nowrap;
+}
+
+.onb-text {
+  padding: 12px 36px 8px;
+  text-align: center;
+}
+
+.onb-title {
+  font-family: var(--font-ui);
+  font-size: 26px;
+  font-weight: 600;
+  margin: 0 0 8px;
+  color: var(--text);
+  letter-spacing: -0.015em;
+  line-height: 1.2;
+}
+
+.onb-subtitle {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0 0 18px;
+  line-height: 1.45;
+}
+
+.onb-body {
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text);
+  max-width: 440px;
+  margin: 0 auto;
+}
+.onb-body p {
+  margin: 0;
+}
+.onb-body em {
+  font-style: italic;
+  color: var(--text-muted);
+}
+.onb-body strong {
+  font-weight: 600;
+  color: color-mix(in srgb, #bf8b5a 60%, var(--text));
+}
+
+.onb-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 24px 22px;
+  border-top: 1px solid color-mix(in srgb, var(--border) 60%, transparent);
+}
+
+.onb-dots {
+  display: flex;
+  gap: 7px;
+}
+.onb-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: 0;
+  padding: 0;
+  background: color-mix(in srgb, var(--text-muted) 30%, transparent);
+  cursor: pointer;
+  transition: background-color 160ms, transform 160ms;
+}
+.onb-dot:hover {
+  background: var(--text-muted);
+}
+.onb-dot--active {
+  background: #bf8b5a;
+  transform: scale(1.25);
+}
+
+.onb-actions {
+  display: flex;
+  gap: 10px;
+}
+.onb-actions .btn {
+  font-family: var(--font-ui);
+  font-size: 13px;
+  padding: 7px 16px;
+}
+.onb-actions .btn-primary {
+  background: #bf8b5a;
+  border-color: #bf8b5a;
+}
+.onb-actions .btn-primary:hover {
+  filter: brightness(1.06);
+}
+.onb-actions .btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+@media (max-width: 560px) {
+  .onb-vis { min-height: 140px; padding: 20px 16px 4px; }
+  .onb-text { padding: 4px 18px 2px; }
+  .onb-ascii--logo { font-size: 7px; }
+  .onb-mock { width: 280px; }
 }

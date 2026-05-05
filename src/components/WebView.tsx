@@ -123,6 +123,24 @@ function startPositionLoop(tabId: string) {
   requestAnimationFrame(tick);
   stopByTab.set(tabId, () => { cancelled = true; });
 }
+/** Strip the "Electron/..." token from the default UA so sites don't
+ *  mistake us for an automated/headless client and downgrade hover-
+ *  driven UI (e.g. nav fly-outs that only render when the page thinks
+ *  it has a real desktop browser). Built lazily because navigator.user-
+ *  Agent is only stable post-document-ready in some host setups. */
+let cachedDesktopUA: string | null = null;
+function desktopUserAgent(): string {
+  if (cachedDesktopUA) return cachedDesktopUA;
+  const raw = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+  // Drop "Milu/x.y.z" and "Electron/x.y.z" tokens; collapse double spaces.
+  cachedDesktopUA = raw
+    .replace(/\s*Milu\/\S+/i, '')
+    .replace(/\s*Electron\/\S+/i, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+  return cachedDesktopUA;
+}
+
 function getOrCreateWebviewElement(tabId: string, url: string): WebviewEl {
   const existing = webviewSessions.get(tabId);
   if (existing) return existing;
@@ -130,6 +148,7 @@ function getOrCreateWebviewElement(tabId: string, url: string): WebviewEl {
   wv.setAttribute('src', url);
   wv.setAttribute('allowpopups', 'true');
   wv.setAttribute('webpreferences', 'contextIsolation=yes');
+  wv.setAttribute('useragent', desktopUserAgent());
   wv.className = 'webview-frame';
   // Absolute positioning inside the fixed overlay → free-floating
   // rectangle that we sync to the slot's bounding rect each frame.
