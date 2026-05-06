@@ -1,6 +1,6 @@
 {
   "name": "milu",
-  "version": "0.4.11",
+  "version": "0.4.12",
   "private": true,
   "description": "A Typora-like markdown editor for macOS",
   "main": "dist-electron/main.js",
